@@ -54,7 +54,7 @@ const CATALOG_SORT_DEFAULT: CatalogSort = 'year-desc'
 const MAIN_MIN_WIDTH = 280
 
 type WatchedFilter = 'all' | 'watched' | 'unwatched'
-type SidebarMode = 'browse' | 'add'
+type AppTab = 'watchlist' | WatchedFilter | 'add'
 
 const NAV_FILTERS: { id: WatchedFilter; label: string }[] = [
   { id: 'unwatched', label: 'Unwatched' },
@@ -84,17 +84,6 @@ function loadCatalogSort(): CatalogSort {
     /* ignore */
   }
   return CATALOG_SORT_DEFAULT
-}
-
-function loadCatalogVisible(): boolean {
-  try {
-    const raw = localStorage.getItem(CATALOG_VISIBLE_KEY)
-    if (raw === '0' || raw === 'false') return false
-    if (raw === '1' || raw === 'true') return true
-  } catch {
-    /* ignore */
-  }
-  return true
 }
 
 function clampCatalogWidth(width: number, viewportWidth = window.innerWidth): number {
@@ -132,6 +121,26 @@ function RemoveIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/** Watchlist — ordered list. */
+function WatchlistNavIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8 6h13M8 12h13M8 18h13"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4 6h.01M4 12h.01M4 18h.01"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -315,7 +324,7 @@ export default function App() {
   const [decade, setDecade] = useState<DecadeFilter>('all')
   const [toWatchDecade, setToWatchDecade] = useState<DecadeFilter>('all')
   const [watchedFilter, setWatchedFilter] = useState<WatchedFilter>('unwatched')
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>('browse')
+  const [appTab, setAppTab] = useState<AppTab>('watchlist')
   const [catalogQuery, setCatalogQuery] = useState('')
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(() => loadCatalogSort())
   const [query, setQuery] = useState('')
@@ -325,7 +334,8 @@ export default function App() {
   const [flashId, setFlashId] = useState<number | null>(null)
   const [details, setDetails] = useState<MovieDetailsSubject | null>(null)
   const [catalogWidth, setCatalogWidth] = useState(() => loadCatalogWidth())
-  const [catalogVisible, setCatalogVisible] = useState(() => loadCatalogVisible())
+  // Start closed: Watchlist is the default tab; library tabs open the catalog.
+  const [catalogVisible, setCatalogVisible] = useState(false)
   const [resizingCatalog, setResizingCatalog] = useState(false)
   const [watchlistDragId, setWatchlistDragId] = useState<number | null>(null)
   const [watchlistDropId, setWatchlistDropId] = useState<number | null>(null)
@@ -415,7 +425,8 @@ export default function App() {
   if (details) lastDetails.current = details
   const panelMovie = details ?? lastDetails.current
   const panelOpen = details != null
-  const addMode = sidebarMode === 'add'
+  const addMode = appTab === 'add'
+  const watchlistMode = appTab === 'watchlist'
 
   const decadeCatalog = useMemo(
     () => filterFilmsByDecade(catalogFilms, decade),
@@ -571,9 +582,18 @@ export default function App() {
     setDetails(null)
   }
 
+  function enterWatchlist() {
+    setAppTab('watchlist')
+    setCatalogVisible(false)
+    setQuery('')
+    setResults([])
+    setStatus('idle')
+    setError(null)
+  }
+
   function enterBrowse(filter: WatchedFilter) {
+    setAppTab(filter)
     setWatchedFilter(filter)
-    setSidebarMode('browse')
     setCatalogVisible(true)
     setQuery('')
     setResults([])
@@ -582,7 +602,7 @@ export default function App() {
   }
 
   function enterAddMode() {
-    setSidebarMode('add')
+    setAppTab('add')
     setCatalogVisible(true)
   }
 
@@ -612,14 +632,26 @@ export default function App() {
       className="shell"
       data-catalog={catalogVisible || undefined}
       data-details={panelOpen || undefined}
+      data-view={appTab}
       style={{ '--catalog-width': `${catalogWidth}px` } as CSSProperties}
     >
       <nav className="app-nav scrollable" aria-labelledby={navId}>
         <span id={navId} className="visually-hidden">
-          Library views
+          Views
         </span>
+        <button
+          type="button"
+          className="app-nav-btn"
+          aria-label="Watchlist"
+          title="Watchlist"
+          aria-current={watchlistMode ? 'true' : undefined}
+          data-active={watchlistMode || undefined}
+          onClick={enterWatchlist}
+        >
+          <WatchlistNavIcon />
+        </button>
         {NAV_FILTERS.map((option) => {
-          const selected = !addMode && watchedFilter === option.id
+          const selected = appTab === option.id
           return (
             <button
               key={option.id}
@@ -649,7 +681,7 @@ export default function App() {
         <div className="app-nav-spacer" aria-hidden="true" />
         <button
           type="button"
-          className="app-nav-btn"
+          className="app-nav-btn app-nav-catalog-toggle"
           aria-label={catalogVisible ? 'Hide catalog' : 'Show catalog'}
           title={catalogVisible ? 'Hide catalog' : 'Show catalog'}
           aria-pressed={catalogVisible}
@@ -937,7 +969,7 @@ export default function App() {
             })}
           </div>
           {toWatch.length === 0 ? (
-            <p className="empty">Nothing queued yet. Add from the library on the left.</p>
+            <p className="empty">Nothing queued yet. Use Add or Unwatched to find films.</p>
           ) : filteredToWatch.length === 0 ? (
             <p className="empty">No films in this decade.</p>
           ) : (

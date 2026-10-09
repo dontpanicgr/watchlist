@@ -1489,10 +1489,28 @@ img {
     height: auto;
     max-height: none;
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 0;
   }
 
   .shell:not([data-catalog='true']) .library {
+    display: none;
+  }
+
+  /* One tab, one view on small screens. */
+  .shell[data-view='watchlist'] .library {
+    display: none;
+  }
+
+  .shell:not([data-view='watchlist']) .main {
+    display: none;
+  }
+
+  .shell:not([data-view='watchlist']) .library {
+    display: block;
+    pointer-events: auto;
+  }
+
+  .app-nav-catalog-toggle {
     display: none;
   }
 
@@ -1507,11 +1525,11 @@ img {
   }
 
   .results {
-    max-height: 14rem;
+    max-height: none;
   }
 
   .catalog-list {
-    max-height: min(42vh, 28rem);
+    max-height: none;
   }
 
   .main {
@@ -1577,10 +1595,6 @@ img {
 
   .sidebar {
     padding: var(--space-4) 0;
-  }
-
-  .catalog-list {
-    max-height: min(38vh, 22rem);
   }
 
   .search-input {
