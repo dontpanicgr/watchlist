@@ -1,0 +1,12 @@
+---
+description: Cloud sync goals for watchlist / movie status — no user auth UX
+alwaysApply: true
+---
+
+# Cloud sync preferences
+
+- Goal: sync **watchlist** and **movie status** so the same list is available on desktop and mobile.
+- Do **not** build user-facing auth (no email magic links, sign-in screens, accounts). Owner-only personal sync is fine.
+- Prefer a free cloud store that does not pause the project after inactivity (Supabase Free’s 7-day pause is a known pain point).
+- Firebase (Firestore) is an acceptable candidate: personal document sync without a login UI.
+- `localStorage` remains a local cache; cloud is for cross-device continuity.
